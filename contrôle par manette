@@ -1,0 +1,15 @@
+import ipywidgets.widgets as widgets
+controller = widgets.Controller(index=0)  # replace with index of your controller
+display(controller)
+
+from jetracer.nvidia_racecar import NvidiaRacecar
+import traitlets
+car = NvidiaRacecar()
+
+car.throttle_gain = 0.4
+car.steering_offset=0.04
+car.steering = 0
+
+left_link = traitlets.dlink((controller.axes[0], 'value'), (car, 'steering'), transform=lambda x: -x)
+accel = traitlets.dlink((controller.buttons[7], 'value'), (car, 'throttle'), transform=lambda x: -x)
+recul = traitlets.dlink((controller.buttons[6], 'value'), (car, 'throttle'), transform=lambda x: x)
