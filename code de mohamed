@@ -1,0 +1,104 @@
+import cv2
+import numpy as np
+import torch
+from torch import optim, nn
+import math
+from time import sleep, time, ctime, gmtime
+
+# Road following parameters
+STEERING_BIAS = -0.5
+SPEED = 1.0
+
+# Vehicle specifications
+# Distance = 20 cm; Difference between front and rear axles (empirical value)
+
+# Initialize state of variables
+cost_time = 0  # The number of frames to retain stopped
+position, position_old = 0, 0  # Measuring centering position of line (0, 0)
+orientation = 0  # Measure of the current orientation of roads
+last_time = time()  # Time (now)
+
+# Drive related code (simplified for clarity)
+def drive(speed, orientation):
+    # Control logic here (e.g., drive API calls)
+
+# CSV file (current) Check log file
+csv_file = open("drive_log.csv", "a", newline='')  # Append mode
+csv_writer = csv.writer(csv_file)
+csv_writer.writerow(('Time', 'Throttle', 'Steering', 'Position', 'Y', 'Orientation'))
+
+# Drive initialization
+if csv_file.tell() == 0:
+    csv_writer.writerow(('Time', 'Throttle', 'Steering', 'Position', 'Y', 'Orientation'))
+
+def update_position(throttle, speed, time_elapsed):
+    global position, position_old, orientation
+    if steering == 0:  # Moving straight
+        position = position_old + speed * time_elapsed * orientation
+    
+else:
+    # Calculate turning radius
+    radius = WHEEL_BASE / tan(steering)
+
+    # Calculate the change in orientation
+    delta_orientation = speed * time_elapsed / radius
+
+    # Update orientation
+    orientation = (orientation + delta_orientation) % (2 * pi)
+
+    # Calculate the center of rotation
+    cx = position_x - sin(orientation) * radius
+    cy = position_y - cos(orientation) * radius
+
+    # Update position
+    position_x = cx + sin(orientation + delta_orientation) * radius
+    position_y = cy - cos(orientation + delta_orientation) * radius
+
+def update():
+    global count_stops, STEERING_BIAS, STEERING_GAIN, position_x, position_y, orientation, last_time
+
+    # Calculate time elapsed since last update
+    current_time = time()
+    time_elapsed = current_time - last_time
+    last_time = current_time
+
+    # Process the image and get predictions for both models
+    image = preprocess(camera.read()).half()
+    # Collision Avoidance model
+    prob_blocked = F.softmax(model_ctrl(image), dim=1).flatten()[0]
+    blocked_slider.value = prob_blocked.item()
+
+    if prob_blocked > 0.5:
+        count_stops += 1
+        if count_stops > 1:
+            car_stops = 1
+            car_throttle = 0
+            car_steering = 0
+    else:
+        count_stops = 0
+else:
+    count_stops = 0
+    # Road Following model
+    x = model_trt(image).detach().cpu().numpy().flatten()[0]
+
+    # Compute the steering value
+    steer_val = x * STEERING_GAIN + STEERING_BIAS
+
+    car.steering = steer_val
+    car.throttle = -0.2  # Or you can use an adjustable speed variable
+
+# Update the vehicle position
+update_position(car.steering, car.throttle, time_elapsed)
+
+# Save throttle, steering, and position to the CSV file
+current_time_str = time.strftime("%Y-%m-%d %H:%M:%S")  # Current timestamp as a string
+csv_writer.writerow([current_time_str, car.throttle, car.steering, position_x, position_y, orientation])
+
+time.sleep(0.001)
+
+# Start the loop to process camera frames
+try:
+    while True:
+        update()
+finally:
+    csv_file.close()  # Ensure the CSV file is closed when exiting the loop
