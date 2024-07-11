@@ -1,0 +1,11 @@
+from jetcam.csi_camera import CSICamera
+def brg8_to_jpeg(value,quality=75):
+    return bytes(cv2.imencode('.jpeg',value)[1])
+
+camera = CSICamera(width=224, height=224, capture_fps=30)
+image = widgets.Image(format='jpeg',width=224, height=224)
+
+camera_link = traitlets.dlink((camera, 'value'),(image,'value'),transform=brg8_to_jpeg)
+camera.running = True 
+
+display(image)
