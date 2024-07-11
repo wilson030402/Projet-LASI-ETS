@@ -1,0 +1,38 @@
+import cv2
+import requests
+import numpy as np
+
+# URL of the video feed from the Flask server
+url = 'http://192.168.0.101:5000/video_feed'  # Ensure to replace with the correct IP address
+
+def get_frame(url):
+    # Open a connection to the URL
+    stream = requests.get(url, stream=True)
+    
+    # Loop over the frames from the URL
+    bytes_ = b''
+    for chunk in stream.iter_content(chunk_size=1024):
+        bytes_ += chunk
+        a = bytes_.find(b'\xff\xd8')
+        b = bytes_.find(b'\xff\xd9')
+        if a != -1 and b != -1:
+            jpg = bytes_[a:b+2]
+            bytes_ = bytes_[b+2:]
+            frame = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
+            yield frame
+
+# OpenCV window to display the video feed
+cv2.namedWindow("Jetson Nano Video Stream", cv2.WINDOW_NORMAL)
+
+try:
+    # Fetch and display the video stream
+    for frame in get_frame(url):
+        cv2.imshow("Jetson Nano Video Stream", frame)
+        
+        # Exit the loop when 'q' is pressed
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+except Exception as e:
+    print(f"An error occurred: {e}")
+finally:
+    cv2.destroyAllWindows()
