@@ -1,0 +1,29 @@
+from flask import Flask, Response
+from jetcam.csi_camera import CSICamera
+import cv2
+
+app = Flask(__name__)
+
+# Initialize the camera
+camera = CSICamera(width=224, height=224, capture_fps=30)
+
+def gen_frames():  
+    while True:
+        # Capture frame-by-frame
+        frame = camera.read()
+        
+        # Convert the frame to JPEG format
+        ret, buffer = cv2.imencode('.jpg', frame)
+        frame = buffer.tobytes()
+        
+        # Yield the output frame in byte format
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  
+
+@app.route('/video_feed')
+def video_feed():
+    # Video streaming route
+    return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
