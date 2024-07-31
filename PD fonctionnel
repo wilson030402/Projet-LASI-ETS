@@ -1,0 +1,17 @@
+from utils import preprocess
+import numpy as np
+
+kp = 2.5
+kd = 8.0
+last_x = 0
+
+car.throttle = -0.3
+car.steering_offset = 0
+
+while True:
+    image = camera.read()
+    image = preprocess(image).half()
+    output = model_trt(image).detach().cpu().numpy().flatten()
+    x = float(output[0])
+    car.steering = - (x * kp + ( x - last_x ) *kd)
+    last_x = x
